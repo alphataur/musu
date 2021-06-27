@@ -7,6 +7,7 @@ const APIRouter = require("./routes/index").APIRouter
 const app = express()
 
 app.use("/api", APIRouter)
+
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(bodyParser.json())
 

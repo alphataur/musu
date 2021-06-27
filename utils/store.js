@@ -3,51 +3,49 @@ const mongoose = require("mongoose")
 const id3 = require("node-id3")
 const fs = require("fs")
 const events = require("events")
-
+const path = require("path")
 
 class libraryUtils extends events{
   constructor(fpath){
     super()
     this.fpath = fpath
   }
-  walkFiles(root){
-    var root;
+  filterMusic(files){
+    const filters = ["mp3", "m4a", "flac"]
+    return files.filter(e => filters.indexOf(e) > -1)
+  }
+  async walkFiles(root){
     if(root === undefined)
       root = this.fpath
-    return new Promise((resolve, reject)=>{
-      fs.readdir(root, (err, files)=>{
-        if(err)
-          return reject(err)
-        else{
-          const fullPaths = files.map((e)=>{
-            return path.join(root, e)
-          })
-          Promise.all(fullPaths.map(e =>{
-            return new Promise((resolve, reject)=>{
-              fs.lstat(e, (err, stats)=>{
-                if(err)
-                  reject(err)
-                else if(stats.isDirectory()){
-                  this.walkFiles().then(resolve).catch(reject)
-                }
-                else if(stats.isFile()){
-                  return resolve([e])
-                }
-                else{
-                  return resolve([])
-                }
-              })
-            })
-          }))
+    let files = await fs.promises.readdir(root)
+    
+    return await Promise.all(files.map(e => {
+      return new Promise(async (resolve, reject)=>{
+        let fullPath = path.join(root,e)
+        let stats;
+        try{
+          stats = await fs.promises.lstat(fullPath)
         }
+        catch(err){
+          return reject(err)
+        }
+        if(stats.isFile())
+          return resolve([fullPath])
+        else if(stats.isDirectory())
+          return resolve(await this.walkFiles(fullPath))
+        else
+          return resolve([])
       })
+    })).then((sparse)=>{
+      return sparse.reduce((a, e) => a.concat(...e), [])
     })
   }
 }
 
-function main(){
+async function main(){
   let a = new libraryUtils(process.env.MPATH)
-  a.walkFiles(process.env.MPATH).then(console.log).catch(console.error)
+  let results = await a.walkFiles()
+  console.log(results)
 }
 
 main()
