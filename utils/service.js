@@ -1,11 +1,12 @@
 require("dotenv").config()
-const mongoose = require("mongoose")
+//const mongoose = require("mongoose")
 const id3 = require("node-id3")
 const fs = require("fs")
 const events = require("events")
 const path = require("path")
+const collections = require("./collections")
 
-class libraryUtils extends events{
+class MusuService extends events{
   constructor(fpath){
     super()
     //patching arrays and object prototypes
@@ -17,7 +18,7 @@ class libraryUtils extends events{
 
     if(Object.prototype.keys === undefined){
       Object.prototype.keys = function(){
-        return this[this.length - 1]
+        return Object.keys(this)
       }
     }
     this.fpath = fpath
@@ -64,13 +65,30 @@ class libraryUtils extends events{
       return sparseArr.reduce((a, e) => a.concat(...e), [])
     })
   }
+  filterTags(file){
+    let allowedTags = ["genre", "album", "artist", "title", "year", "comment", "image"]
+    let matched = file.keys().filter(e => allowedTags.indexOf(e) > -1)
+    let res = {}
+    for(let i of matched){
+      if(i === "image" && file.image !== undefined){
+        res[i] = file[i].imageBuffer
+        continue
+      }
+      res[i] = file[i]
+    }
+    return res
+  }
 }
 
 async function main(){
-  let a = new libraryUtils(process.env.MPATH)
+  let a = new MusuService(process.env.MPATH)
+
   let results = await a.walkFiles()
-  for(let i of a.filterMusic(results)){
-    console.log(await a.readTags(i))
+  for(let music of a.filterMusic(results)){
+    let tags = a.filterTags(await a.readTags(music))
+    let song = new collections.songMeta(tags)
+    debugger;
+    console.log(tags)
   }
 }
 
