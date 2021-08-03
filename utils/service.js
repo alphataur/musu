@@ -82,13 +82,16 @@ class MusuService extends events{
 
 async function main(){
   let a = new MusuService(process.env.MPATH)
-
+  let core = new collections.mongoCore()
   let results = await a.walkFiles()
+  let i = 0
+  let n = results.length
   for(let music of a.filterMusic(results)){
+    console.log(i, "of", n)
     let tags = a.filterTags(await a.readTags(music))
-    let song = new collections.songMeta(tags)
-    debugger;
-    console.log(tags)
+    let song = new collections.songMeta(tags, core)
+    await song.save()
+    i++;
   }
 }
 
