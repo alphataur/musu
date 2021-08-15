@@ -1,9 +1,9 @@
 require("dotenv")
-const fs = require("fs")
+
 const {createHash} = require("crypto")
 const path = require("path")
 const id3 = require("node-id3")
-const {Finder, FilterMusic} = require("./finder")
+const {Finder, filterMusic} = require("./finder")
 const fs = require("fs").promises
 
 function MusicRead(mPath){
@@ -22,9 +22,11 @@ class Vault{
   }
   async consume(files){
     for(let file of files){
-      let music = await MusicRead(mPath)
-      let meta = new SongMeta(music)
-      debugger;;
+      let music = await MusicRead(file)
+      let extractor = new SongMeta(music)
+      let tags = extractor.pack()
+      console.log(tags)
+      //console.log(extractor.generate_id())
     }
   }
   add(){
@@ -33,7 +35,8 @@ class Vault{
   async crawl(){
     let finder = new Finder({basePath: this.basePath})
     let results = await finder.crawl()
-    await this.consume(results)
+    let music = results.filter(filterMusic)
+    await this.consume(music)
   }
 }
 
@@ -45,9 +48,39 @@ class SongMeta{
     this.title = options.title || ""
     this.year = options.year || ""
     //this.comment = options.comment || ""
+    this.hash = this.getHash()
     this.image = options.image || ""
-    this.base = process.env.BPATH
-    this.vault = new Vault({confPath: path.join(base, )})
+    this.imageHash = this.getImageHash()
+    this.base = process.env.BPATH || "/home/musu"
+    this.vault = new Vault({confPath: path.join(this.base, "index")})
+  }
+  getImageHash(){
+    if(this.image === "" || this.image === undefined)
+      return ""
+    else{
+      let hasher = createHash("md5")
+      hasher.update(this.image.imageBuffer)
+      //write logic here
+      return hasher.digest("hex")
+    }
+  }
+  getImageBuffer(){
+    if(this.image === "" || this.image === undefined)
+      return ""
+    else{
+      return this.image.imageBuffer
+    }
+  }
+  getHash(){
+    let combined = ""
+    let payload = this.pack()
+    for(let key in payload){
+      if(typeof payload[key] === "string")
+        combined += payload[key]
+    }
+    let hasher = createHash("md5")
+    hasher.update(combined)
+    return hasher.digest("hex")
   }
   pack(){
     return {
@@ -56,10 +89,21 @@ class SongMeta{
       artist: this.artist,
       title: this.title,
       year: this.year,
-      image: this.image
+      hash: this.hash,
+      imageBuffer: this.getImageBuffer(),
+      imageHash: this.getImageHash()
     }
   }
   async save(){
     let data = this.pack()
+    let image = data.imageBuffer
+
   }
 }
+
+async function main(){
+  let handle = new Vault({basePath: "/home/iamfiasco/Downloads/Music/audiophile/Run The Jewels - RTJ4 (2020) [320]/"})
+  await handle.crawl()
+}
+
+main()
