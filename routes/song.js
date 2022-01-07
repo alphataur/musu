@@ -75,6 +75,7 @@ router.get("/map/hash2id", async (req, res) => {
   res.json({ result: ID, success: true, error: false})
 })
 
+
 router.get("/play", async (req, res) => {
   let ID = await hashReverseLookup.getOne(req.query.hash, dec=true)
   let meta = await idLookup.getOne(ID)
