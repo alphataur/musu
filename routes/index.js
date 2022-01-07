@@ -1,4 +1,4 @@
-const { songRouter } = require("./song")
+const { SongRouter } = require("./song")
 module.exports = {
-  songRouter
+  SongRouter
 }

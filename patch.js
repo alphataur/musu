@@ -12,8 +12,9 @@ async function patchRedis(){
     for(let id of ids){
       if(id==="visited") continue
       let result = await toHash.connection.get(id)
+      let n = result.length
+      result = result.slice(1, n-1)
       await toID.connection.set(result, id)
-      console.log(id)
     }
   }
   catch(e){

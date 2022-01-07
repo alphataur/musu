@@ -12,14 +12,20 @@ class Connection{
     this.connection.on("error", e => console.log(`something ${e}`))
   }
   async getAll(){
-    return await this.getOne("*")
+    return await this.connection.keys("*")
+  }
+  async getPattern(pattern){
+    return await this.connection.keys(pattern)
   }
   async setOne(key, value){
     await this.connection.set(key, JSON.stringify(value)) //.catch(console.log)
     return true
   }
-  async getOne(key){
-    return JSON.parse(await this.connection.get(key))
+  async getOne(key, decode){
+    if(!!decode)
+      return await this.connection.get(key)
+    else
+      return JSON.parse(await this.connection.get(key))
   }
   async setMany(keys, values){
     await Promise.all(keys.map(async function(key, index, keys){
