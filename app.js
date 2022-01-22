@@ -1,4 +1,5 @@
-require("dotenv").config()
+require("dotenv").config({ path: "../confs/musu-dev2022/.env" })
+
 const express = require("express")
 const redis = require("redis")
 const { baseRouter } = require("./router/base")
