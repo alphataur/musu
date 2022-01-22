@@ -66,11 +66,12 @@ router.get("/meta", async (req, res) => {
 })
 
 router.get("/image", (req, res) => {
-  try{
-    fs.createReadStream(path.join(process.env.IPATH, req.query.id + ".jpg")).pipe(res)
+  let fpath = path.join(process.env.IPATH, `${req.query.id}.jpg`)
+  if(fs.existsSync(fpath)){
+    fs.createReadStream(fpath).pipe(res)
   }
-  catch(e){
-    res.end()
+  else{
+    return res.json({ success: false, error: "album art not found"})
   }
 })
 
@@ -79,5 +80,5 @@ process.on("exit", () => {
   return process.exit(0)
 })
 module.exports = {
-  APIRouter: router
+  baseRouter: router
 }

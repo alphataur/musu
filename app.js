@@ -1,14 +1,14 @@
 require("dotenv").config()
 const express = require("express")
 const redis = require("redis")
-const { APIRouter } = require("./router/api")
+const { baseRouter } = require("./router/base")
 const { successify, errorify } = require("./utils")
 const cors = require("cors")
 
 const app = express()
 app.use(cors())
 
-app.use("/api", APIRouter)
+app.use("/api", baseRouter)
 
 app.get("/ping", (req, res) => {
   return res.json(successify({ message: "pong" }))

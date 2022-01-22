@@ -25,9 +25,9 @@
 
 <script>
   import { onMount } from "svelte";
-  import { requestQS } from "../utils/porter.js";
+  import { requestQS } from "../../utils/porter.js";
   import { page } from '$app/stores'
-  import { meta, imageURL } from '../states/play.js'
+  import { meta, imageURL } from '../../states/play.js'
   //import { Howl, Howler } from '../utils/audible.js'
 
   let _meta = {};
@@ -43,7 +43,7 @@
   })
 
   async function main(){
-    const id = $page.url.searchParams.get("id")
+    const id = $page.params.id
     let results = await requestQS(`http://localhost:3001/api/meta?id=${id}`)
     //meta = results.meta
     meta.set(results.meta)

@@ -1,5 +1,5 @@
-const { APIRouter } = require("./api")
+const { baseRouter } = require("./base")
 
 module.exports = {
-  APIRouter
+  baseRouter
 }

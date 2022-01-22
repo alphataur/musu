@@ -1,4 +1,5 @@
 async function requestQS(url){
+  //DO WE NEED THIS?
   let json = {}
   try{
     console.log("fetching url", url)

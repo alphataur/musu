@@ -16,7 +16,7 @@
     <ul class="">
       {#each searchResultsLocal as result}
         <li class="overflow-hidden my-2 text-center border-2 rounded rounded-xl border-blue-800 bg-blue-700 text-gray-100"> 
-          <a href="/play?id={result.id}">{result.title || "Untitled" } - {result.artist || "Unknown"}</a>
+          <a href="/play/{result.id}">{result.title || "Untitled" } - {result.artist || "Unknown"}</a>
         </li>
       {/each}
     </ul>
