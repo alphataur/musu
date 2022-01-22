@@ -1,6 +1,6 @@
 <div class="h-screen flex flex-col justify-center">
   <div class="pt-1 flex flex-row justify-center">
-    <img class="object-fit rounded rounded-full w-96 h-96" src={_imageURL}>
+    <img class="object-fit rounded rounded-full w-96 h-96 border-2 border-gray-800 p-1" src={_imageURL}>
   </div>
   <div class="pt-4 flex flex-row justify-center">
     <p class="text-6xl text-gray-800 text-center"> { _meta.title || "Untitled"}</p>
@@ -15,7 +15,7 @@
 </div>
 <div class="flex flex-row justify-end">
   <div class="pt-10 flex flex-row justify-center float-bottom">
-    <audio class="w-screen bg-gray-700 text-gray-100" controls autoplay>
+    <audio class="w-screen bg-gray-700 text-gray-100" controls autoplay loop>
       {#each songURL as song}
         <source src={ song } type="audio/mpeg" />
       {/each}

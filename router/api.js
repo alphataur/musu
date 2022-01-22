@@ -66,7 +66,12 @@ router.get("/meta", async (req, res) => {
 })
 
 router.get("/image", (req, res) => {
-  fs.createReadStream(path.join(process.env.IPATH, req.query.id + ".jpg")).pipe(res)
+  try{
+    fs.createReadStream(path.join(process.env.IPATH, req.query.id + ".jpg")).pipe(res)
+  }
+  catch(e){
+    res.end()
+  }
 })
 
 process.on("exit", () => {
