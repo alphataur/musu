@@ -35,7 +35,8 @@ router.get("/find", async (req, res) => {
 
 
 router.get("/search", async (req, res) => {
-  let param = String(req.query.search)
+  let param = Array.from(req.query.search).filter(e => e !== " " ).join("")
+  console.log(param)
   let slugs = await lookup.findPattern(param)
   let ids = await lookup.map2Id(slugs)
   let results = await Promise.all(ids.map(async (result) => await lookup.map2Meta(result)))
