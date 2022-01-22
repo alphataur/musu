@@ -21,7 +21,7 @@ initializeLookup()
 
 router.get("/find", async (req, res) => {
   // Deprecation warning on this API endpoint
-  let results = await lookup.findPattern(req.query.search)
+  let results = await lookup.findPattern(req.query.search) //doesnt accept space; applying space breaks this API
   let ids = await lookup.map2Id(results)
   let payload = []
   for(let i = 0; i < ids.length; i++){
