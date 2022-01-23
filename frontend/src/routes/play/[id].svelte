@@ -18,7 +18,10 @@
   
 </div>
 <div class="flex flex-row justify-end">
-  <div class="pt-10 flex flex-row justify-center float-bottom">
+  <div class="pt-10 flex flex-row justify-center">
+    <div class="w-screen h-8 w-full bg-gray-800">
+      <div class="bg-gray-700 h-8" style="width: {perc}%"></div>
+    </div>
     <!--
     <audio class="w-screen bg-gray-700 text-gray-100" controls autoplay loop>
       {#each songURL as song}
@@ -36,15 +39,24 @@
   import { page } from '$app/stores'
   import { meta, imageURL } from '../../states/play.js'
   import { Howl, Howler } from 'howler';
+  let cursor = 0;
 
   let _meta = {};
   let _imageURL = "https://i.pinimg.com/736x/81/5c/c5/815cc5b6d5737102cba7a02a7ceff10d.jpg";
   let songURL = ""
   let audio;
-  let playing = false;
   let audioID;  
-
-
+  let perc = 0;
+  let timer = setInterval(() => {
+    //if(audio.playing()){
+    //  clearInterval(timer)
+    //}
+    let duration = audio._duration
+    let currentTime = audio.seek()
+    perc = Math.floor((currentTime/duration)*100)
+    if(perc === 100) clearInterval(timer)
+    console.log(perc)
+  }, 1000)
   meta.subscribe(value => {
     _meta = value
   })
@@ -70,9 +82,9 @@
       autoplay: true,
       html5: true
     })
+    cursor = audio._duration
   }
   function togglePlay(){
-    console.log("toggling play", playing, audioID)
     if(audio.playing()){
       console.log("audio already playing")
       audio.pause()
