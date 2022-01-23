@@ -2,7 +2,7 @@ require("dotenv").config()
 const fs = require("fs")
 const path = require("path")
 const express = require("express")
-
+const { pipeline } = require("stream")
 const { fastEntry, fastLookup } = require("../lib/db")
 const { successify, errorify } = require("../utils")
 
@@ -49,7 +49,62 @@ router.get("/search", async (req, res) => {
 
 router.get("/play", async (req, res) => {
   let meta = await lookup.map2Meta(req.query.id)
-  return fs.createReadStream(meta.fpath).pipe(res)
+  let { size } = await fs.promises.stat(meta.fpath)
+  let range = req.headers.range
+
+    if (range) {
+    /** Extracting Start and End value from Range Header */
+    let [start, end] = range.replace(/bytes=/, "").split("-");
+    start = parseInt(start, 10);
+    end = end ? parseInt(end, 10) : size - 1;
+
+    if (!isNaN(start) && isNaN(end)) {
+      start = start;
+      end = size - 1;
+    }
+    if (isNaN(start) && !isNaN(end)) {
+      start = size - end;
+      end = size - 1;
+    }
+
+    // Handle unavailable range request
+    if (start >= size || end >= size) {
+      // Return the 416 Range Not Satisfiable.
+      res.writeHead(416, {
+        "Content-Range": `bytes */${size}`
+      });
+      return res.end();
+    }
+
+    /** Sending Partial Content With HTTP Code 206 */
+    res.writeHead(206, {
+      "Content-Range": `bytes ${start}-${end}/${size}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": end - start + 1,
+      "Content-Type": "video/mp4"
+    });
+
+    let readable = fs.createReadStream(meta.fpath, { start: start, end: end });
+    pipeline(readable, res, err => {
+      console.log(err);
+    });
+
+  } else {
+
+    res.writeHead(200, {
+      "Content-Length": size,
+      "Content-Type": "audio/mp3"
+    });
+
+    let readable = fs.createReadStream(meta.fpath);
+    pipeline(readable, res, err => {
+      console.log(err);
+    });
+
+  }
+
+
+  //return fs.createReadStream(meta.fpath).pipe(res)
 })
 
 router.get("/meta", async (req, res) => {
