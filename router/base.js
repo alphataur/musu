@@ -3,8 +3,9 @@ const fs = require("fs")
 const path = require("path")
 const express = require("express")
 const { pipeline } = require("stream")
-const { fastEntry, fastLookup } = require("../lib/db")
+const { fastLookup } = require("../lib/db")
 const { successify, errorify } = require("../utils")
+const { randomSample } = require("../utils/random")
 
 const router = express.Router()
 
@@ -17,7 +18,23 @@ async function initializeLookup(){
 function closeLookup(){
   lookup.quit()
 }
+
 initializeLookup()
+
+
+router.get("/random", async (req, res) => {
+  try{
+    let slugs = await lookup.findPattern("")
+    let slug = randomSample(slugs)
+    let id = await lookup.map2Id([slug])
+    id = id[0]
+    res.json(successify({ id }))
+  }
+  catch(e){
+    res.json(errorify({ error: "failed to get random slug" }))
+  }
+  
+})
 
 router.get("/find", async (req, res) => {
   // Deprecation warning on this API endpoint
