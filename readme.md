@@ -50,7 +50,7 @@ The current supported features are
 
 ## Support
 
-for any queries send email to `only3xs@gmail.com`.
+for any queries send email to `darksublimethoughts@gmail.com`.
 new ideas/implementations are welcome.
 
 Have a nice day.
