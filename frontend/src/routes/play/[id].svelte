@@ -4,7 +4,7 @@
 <svelte:window on:keydown="{handleStrokes}"></svelte:window>
 <div class="h-screen flex flex-col justify-center">
   <div class="pt-1 flex flex-row justify-center">
-    <img class="object-fit rounded rounded-full w-96 h-96 border-2 border-gray-800 p-1" src={_imageURL}>
+    <img class="object-fit rounded rounded-full w-96 h-96 border-2 border-gray-800 p-1" src={_imageURL} on:click="{togglePlay}">
   </div>
   <div class="pt-4 flex flex-row justify-center">
     <p class="text-6xl text-gray-800 text-center"> { _meta.title || "Untitled"}</p>
