@@ -55,16 +55,29 @@
     let currentTime = audio.seek()
     perc = Math.floor((currentTime/duration)*100)
     if(perc === 100) clearInterval(timer)
-    console.log(perc)
+    //console.log(perc)
   }, 1000)
   meta.subscribe(value => {
     _meta = value
   })
 
   imageURL.subscribe(value => {
+    console.log(`imageURL is set to ${value}`)
     _imageURL = value
   })
-  
+  async function checkImage(url){
+    //FIXME: please use alternative logic
+    let res = await fetch(url, { mode: "cors" })
+    try{
+      await res.json()
+      console.log("the image is not present")
+      return false
+    }
+  catch(e){
+      console.log("image is fine")
+      return true
+    }
+  }
   async function main(){
     const id = $page.params.id
     const url = `http://localhost:3001/api/meta?id=${id}`
@@ -73,7 +86,11 @@
     
     //meta = results.meta
     meta.set(results.meta)
-    imageURL.set(`http://localhost:3001/api/image?id=${id}`)
+    let iURL = `http://localhost:3001/api/image?id=${id}`
+    if(checkImage(iURL))
+      imageURL.set(iURL)
+    else
+      imageURL.set("https://w7.pngwing.com/pngs/503/857/png-transparent-computer-icons-headset-music-icon-text-logo-music-icon.png")
     songURL = [`http://localhost:3001/api/play?id=${id}`]
     audio = new Howl({
       src: [songURL],
