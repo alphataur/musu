@@ -33,30 +33,26 @@
 </div>
 
 <script>
-  import { onMount } from "svelte";
-  //import { requestQS } from "../../utils/requestQS.js";
-  //../../utils/porter.js";
+  import { onMount, onDestroy } from "svelte";
   import { page } from '$app/stores'
-  import { meta, imageURL } from '../../states/play.js'
-  import { Howl, Howler } from 'howler';
-  let cursor = 0;
+  import { goto } from '$app/navigation';
+  
 
+  import { meta, imageURL, percentage } from '../../states/play.js'
+  
+  //song definition
+
+  import { Howl, Howler } from "howler"
+  let perc;
+  let cursor = 0;
+  let audio;
   let _meta = {};
   let _imageURL = "https://i.pinimg.com/736x/81/5c/c5/815cc5b6d5737102cba7a02a7ceff10d.jpg";
   let songURL = ""
-  let audio;
-  let audioID;  
-  let perc = 0;
-  let timer = setInterval(() => {
-    //if(audio.playing()){
-    //  clearInterval(timer)
-    //}
-    let duration = audio._duration
-    let currentTime = audio.seek()
-    perc = Math.floor((currentTime/duration)*100)
-    if(perc === 100) clearInterval(timer)
-    //console.log(perc)
-  }, 1000)
+  let globalAct = false
+  let end = false
+  
+
   meta.subscribe(value => {
     _meta = value
   })
@@ -65,6 +61,89 @@
     console.log(`imageURL is set to ${value}`)
     _imageURL = value
   })
+  percentage.subscribe(value => {
+    perc = value
+  })
+
+  class Song{
+    constructor(songURL, id){
+      console.log("constructor called")
+      if(songURL === undefined) throw new Error("parameter songURL required")
+      if(id === undefined) throw new Error("songID parameter required")
+      this.id = id
+      this.songURL = songURL
+      this.audio = new Howl({
+        src: [this.songURL],
+        volume: 1.0,
+        preload: true,
+        //autoplay: true,
+        html5: true
+      })
+      this.duration = this.audio.duration
+      this.offset = 0
+      this.playing = false
+    }
+    looper(){
+      let ticks = 0
+      return new Promise((resolve, reject) => {
+        this.interval = setInterval(async () => {
+          this.duration = this.audio._duration
+          this.offset = this.audio.seek()
+          perc = (this.offset/this.duration) * 100
+          if(this.audio.playing()){
+            ticks++
+          }
+          if(ticks > this.duration){
+            return resolve(await this.getNext())
+          }
+        }, 1000)
+      })
+    }
+    seek(offset){
+      //apply with -5 to reverse
+      if(offset === undefined) offset = 5
+      let to = this.audio.seek() + offset
+      console.log(to, this.duration)
+      if(to > 0 && to < this.audio.seek())
+        this.audio.seek(to, this.audioID)
+    }
+    async play(){
+      this.audioID = this.audio.play()
+      this.playing = true
+      return await this.looper()
+    }
+    async getNext(){
+      let res = await fetch(`http://localhost:3001/api/playlist/next?id=${this.id}&pname=all`, { mode: "cors" })
+      let json = await res.json()
+      return json.id
+    }
+    pause(){
+      if(this.playing)
+        this.audio.pause()
+      else
+        console.log("audio not playing")
+    }
+    togglePlay(){
+      if(this.playing) this.pause()
+      else this.play()
+    }
+    audioDelta(delta){
+      this.audio.volume(this.audio.volume() + delta)
+    }
+    stop(){
+      console.log("CANT TOUCH THIS")
+      if(!!this.audio){
+        this.audio.pause()
+        this.audio.unload()
+      }
+      else{
+        console.log("cannot stop the audio")
+      }
+    }
+  }
+
+
+
   async function checkImage(url){
     //FIXME: please use alternative logic
     let res = await fetch(url, { mode: "cors" })
@@ -78,12 +157,17 @@
       return true
     }
   }
+  function timeout(to){
+    if(to === undefined) to = 1000
+    return new Promise((resolve, reject) => {
+      setTimeout(resolve, to)
+    })
+  }
   async function main(){
     const id = $page.params.id
     const url = `http://localhost:3001/api/meta?id=${id}`
     let res = await fetch(url, { mode: "cors" })
     let results = await res.json()
-    
     //meta = results.meta
     meta.set(results.meta)
     let iURL = `http://localhost:3001/api/image?id=${id}`
@@ -92,49 +176,80 @@
     else
       imageURL.set("https://w7.pngwing.com/pngs/503/857/png-transparent-computer-icons-headset-music-icon-text-logo-music-icon.png")
     songURL = [`http://localhost:3001/api/play?id=${id}`]
-    audio = new Howl({
-      src: [songURL],
-      volume: 1.0,
-      preload: true,
-      autoplay: true,
-      html5: true
-    })
-    cursor = audio._duration
-  }
-  function togglePlay(){
-    if(audio.playing()){
-      console.log("audio already playing")
-      audio.pause()
-      audioID = undefined
+    if(audio === undefined && !globalAct){
+      audio = new Song(songURL, id)
+      globalAct = true
+      await timeout(2000)
+      let next = await audio.play()
+      if(!!next){
+        audio.stop()
+        console.log(`playing next ${next}`)
+        goto(`http://localhost:3000/play/${next}`)
+      }
+      else
+        console.log("failed to extract next file")
     }
     else{
-      console.log("audio sets go up!")
-      audioID = audio.play()
+      console.log("audio is already playing")
     }
+
+    //audio = new Howl({
+    //  src: [songURL],
+    //  volume: 1.0,
+    //  preload: true,
+    //  autoplay: true,
+    //  html5: true
+    //})
+    //let end = true
+    //let isPlaying = true
+    //let timer = setInterval(async () => {
+    //  let duration = audio._duration
+    //  let currentTime = audio.seek()
+    //  
+    //  if(!end){
+    //    clearInterval(timer)
+    //    let res = await fetch("http://localhost:3001/api/playlist/next?id=${$page.params.id}", { mode: "cors"})
+    //    let json = await res.json()
+    //    if(json.success){
+    //      goto("/play/" + json.id)
+    //    }
+    //    else{
+    //     goto("/play") 
+    //    }
+    //  }
+    //  perc = Math.floor((currentTime/duration)*100)
+    //  if(isPlaying !== audio.playing()){
+    //    end = true
+    //    //for end
+    //    console.log("song ended")
+    //  }
+    //}, 10000)
+    //cursor = audio._duration
+  }
+  function togglePlay(){
+    audio.togglePlay()
   }
   function seekFuture(){
-    //console.log(audio.seek()+5)
-    //audio.pause()
-    
-    let now = audio.seek()
-    let to = audio.seek()+5
-    console.log(audioID, to)
-    audio.seek(to, audioID)
-    //audio.play()
+    audio.seek(5)
   }
   function seekPast(){
-    //console.log(audio.seek()-5)
-    //audio.pause()
-    console.log(audioID) 
-    let now = audio.seek()
-    let to = now - 5
-    if(to > 0){
-      audio.seek(to, audioID)
-      console.log(audioID, to)
+    audio.seek(-5)
+  }
+  function audioUp(){
+    audio.audioDelta(0.1)
+  }
+  function audioDown(){
+    audio.audioDelta(-0.1)
+  }
+  function audioStop(){
+    audio.stop()
+  }
+  async function audioNext(){
+    let next = await audio.getNext()
+    if(!!next) {
+      audio.stop()
+      goto(`http://localhost:3000/play/${next}`, { replaceState: true })
     }
-    //let to = audio.seek()-5
-    //audio.seek(audioID, to)
-    //audio.play()
   }
   function handleStrokes(event){
     let key = event.key
@@ -146,20 +261,41 @@
         seekPast()
         break;
       case " ":
+        console.log("play requested")
         togglePlay()
         break;
       case "ArrowUp":
-        audio.volume(audio.volume() + 0.1)
+        audioUp()
+        //this.audio.volume(audio.volume() + 0.1)
         break
       case "ArrowDown":
-        audio.volume(audio.volume() - 0.1)
+        audioDown()
+        //audio.volume(audio.volume() - 0.1)
         break
+      case "S":
+        console.log("stopping song")
+        audioStop()
+        break
+      case "N":
+        audioNext()
       default:
         console.log("unsupported keystroke", key)
         break
     }
   }
-  main()
+
+  onMount(async () => {
+    console.log("mount called")
+    if(audio === undefined) console.log("audio is undefined")
+    await main()
+  })
+  //onDestroy(() => {
+  //  audio.stop()
+  //})
+  //onMount(async () => {
+  //  await main()
+  //})
+  //main()
   //async function main(){
   //  let json = await requestQS("http://localhost:3001/api/meta?search=linkin")
 

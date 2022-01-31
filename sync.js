@@ -1,8 +1,4 @@
-require("dotenv").config()
-
-
-
-
+process.env.IPATH = "../confs/musu-dev2022/albumarts"
 const { isMusic, crawl, readTags } = require("./lib/tags")
 const { hash, hashFile } = require("./lib/signature")
 
@@ -14,7 +10,7 @@ const redis = require("redis")
 
 const meta = redis.createClient({database: 1})
 const search = redis.createClient({database: 2})
-
+const playlist = redis.createClient({ database: 3})
 
 
 
@@ -22,6 +18,9 @@ async function sync(location){
   
   await meta.connect()
   await search.connect()
+  await playlist.connect()
+
+  let plistConnection = new fastEntry(playlist)
 
   if(!!!location) location = "/home/iamfiasco/Downloads/Music/audiophile"
   console.log(location)
@@ -48,6 +47,7 @@ async function sync(location){
       console.log("saving tags")
       let reversal = await handle.save(id)
       
+      await plistConnection.add2Playlist("all", id)
       //console.log(reversal)
       console.log("saving reversal", reversal, id)
       await search.set(reversal, id)

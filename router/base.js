@@ -3,13 +3,13 @@ const fs = require("fs")
 const path = require("path")
 const express = require("express")
 const { pipeline } = require("stream")
-const { fastLookup } = require("../lib/db")
+const { fastStore } = require("../lib/db")
 const { successify, errorify } = require("../utils")
 const { randomSample } = require("../utils/random")
 
 const router = express.Router()
 
-let lookup = new fastLookup()
+let lookup = new fastStore()
 
 async function initializeLookup(){
   await lookup.connect()
@@ -65,6 +65,7 @@ router.get("/search", async (req, res) => {
 })
 
 router.get("/play", async (req, res) => {
+  //document this route; heavily important for range based downloads(resume support for the downloads)
   let meta = await lookup.map2Meta(req.query.id)
   let { size } = await fs.promises.stat(meta.fpath)
   let range = req.headers.range
