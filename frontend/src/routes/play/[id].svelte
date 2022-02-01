@@ -94,6 +94,8 @@
             ticks++
           }
           if(ticks > this.duration){
+            console.log("ending looper")
+            clearInterval(this.interval)
             return resolve(await this.getNext())
           }
         }, 1000)
@@ -124,7 +126,7 @@
         console.log("audio not playing")
     }
     togglePlay(){
-      if(this.playing) this.pause()
+      if(this.audio.playing()) this.pause()
       else this.play()
     }
     audioDelta(delta){
@@ -153,6 +155,7 @@
       return false
     }
   catch(e){
+    console.log(e)
       console.log("image is fine")
       return true
     }
@@ -171,10 +174,15 @@
     //meta = results.meta
     meta.set(results.meta)
     let iURL = `http://localhost:3001/api/image?id=${id}`
-    if(checkImage(iURL))
+    if(!!checkImage(iURL)){
       imageURL.set(iURL)
-    else
+    }
+    else{
+      console.log("setting default")
       imageURL.set("https://w7.pngwing.com/pngs/503/857/png-transparent-computer-icons-headset-music-icon-text-logo-music-icon.png")
+    }
+
+
     songURL = [`http://localhost:3001/api/play?id=${id}`]
     if(audio === undefined && !globalAct){
       audio = new Song(songURL, id)
